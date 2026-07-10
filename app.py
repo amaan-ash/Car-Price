@@ -64,6 +64,14 @@ NAV_ITEMS = [
 NAV_EXPANDED_WIDTH = 272
 NAV_COLLAPSED_WIDTH = 84
 
+# Subtitle shown under each nav item's label (premium SaaS nav card style)
+NAV_SUBTITLES = {
+    "Home": "Dashboard Overview",
+    "Predict Price": "AI Valuation",
+    "Analytics": "Market Insights",
+    "About": "Project Details",
+}
+
 # ============================================================================
 # CONSTANTS & PATHS  (unchanged — backend contract preserved)
 # ============================================================================
@@ -564,42 +572,123 @@ def load_css():
         [class*="st-key-app-nav-panel"]::-webkit-scrollbar { width: 4px; }
         [class*="st-key-app-nav-panel"]::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 
-        /* Nav buttons: override the global brand-gradient button style
-           so the panel reads as a nav list, not a wall of CTA buttons */
-        [class*="st-key-app-nav-panel"] .stButton > button {
+        /* Collapse/expand toggle keeps a plain pill button (it isn't a nav item) */
+        [class*="st-key-nav_toggle"] .stButton > button {
             width: 100%;
             text-align: left;
             justify-content: flex-start;
             font-size: 0.92rem;
             font-weight: 600;
-            padding: 0.65rem 0.85rem;
+            padding: 0.6rem 0.85rem;
             border-radius: 12px;
-            margin: 3px 0;
-            box-shadow: none;
-            transition: all 0.2s ease;
-        }
-        [class*="st-key-app-nav-panel"] .stButton > button[kind="secondary"] {
+            margin: 3px 0 10px 0;
             background: transparent;
             color: var(--text-2);
             border: 1px solid transparent;
+            box-shadow: none;
+            transition: all 0.2s ease;
         }
-        [class*="st-key-app-nav-panel"] .stButton > button[kind="secondary"]:hover {
+        [class*="st-key-nav_toggle"] .stButton > button:hover {
             background: rgba(255,255,255,0.06);
             color: var(--text-1);
             border-color: var(--border);
             transform: none;
         }
-        [class*="st-key-app-nav-panel"] .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            color: #fff;
-            border: none;
-            box-shadow: 0 8px 20px rgba(124,107,242,0.35);
+
+        /* ---------------------------------------------------------------
+           PREMIUM NAV ITEM CARDS (Home / Predict Price / Analytics / About)
+        --------------------------------------------------------------- */
+        [class*="st-key-navitem-"] {
+            position: relative;
+            margin-bottom: 8px;
         }
-        [class*="st-key-app-nav-panel"] .stButton > button[kind="primary"]:hover {
-            transform: translateY(-1px);
+        .navp-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 11px 14px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid transparent;
+            background: rgba(255,255,255,0.03);
+            transition: transform 0.22s cubic-bezier(.2,.8,.2,1),
+                        background 0.22s ease,
+                        box-shadow 0.22s ease,
+                        border-color 0.22s ease;
         }
-        [class*="st-key-app-nav-panel"] div[data-testid="stHorizontalBlock"] .stButton > button {
-            padding: 0.5rem 0.7rem;
+        .navp-item.inactive {
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.07);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        [class*="st-key-navitem-"]:hover .navp-item.inactive {
+            background: rgba(255,255,255,0.075);
+            border-color: var(--border-hover);
+            transform: translateX(3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+        }
+        [class*="st-key-navitem-"]:hover .navp-item.inactive .navp-icon-badge {
+            transform: scale(1.08) rotate(-4deg);
+        }
+        .navp-item.active {
+            background: var(--grad-brand);
+            box-shadow: 0 10px 26px rgba(124,107,242,0.45),
+                        0 0 0 1px rgba(255,255,255,0.08) inset;
+        }
+        .navp-item.active::before {
+            content: "";
+            position: absolute;
+            left: 0; top: 8px; bottom: 8px; width: 4px;
+            border-radius: 4px;
+            background: #ffffff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.9);
+        }
+        .navp-item.active .navp-label { color: #ffffff; font-weight: 700; }
+        .navp-item.active .navp-subtitle { color: rgba(255,255,255,0.85); }
+
+        .navp-icon-badge {
+            flex-shrink: 0;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 19px;
+            background: linear-gradient(145deg, #363b52, #1d2032);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+            transition: transform 0.25s cubic-bezier(.2,.8,.2,1);
+        }
+        .navp-item.active .navp-icon-badge {
+            background: linear-gradient(145deg, rgba(255,255,255,0.38), rgba(255,255,255,0.1));
+            box-shadow: 0 0 14px rgba(255,255,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.45);
+        }
+
+        .navp-text-col { display: flex; flex-direction: column; line-height: 1.25; overflow: hidden; }
+        .navp-label { font-size: 0.9rem; font-weight: 600; color: var(--text-1); white-space: nowrap; }
+        .navp-subtitle { font-size: 0.7rem; color: var(--text-3); white-space: nowrap; margin-top: 1px; }
+
+        .navp-item.collapsed { justify-content: center; padding: 10px 0; }
+        .navp-item.collapsed .navp-text-col { display: none; }
+
+        /* Keep the real button fully functional but invisible, stretched over the card.
+           Streamlit nests the button inside several of its own wrapper divs, and one of
+           those wrappers (not the outer card container) can end up being the element that
+           establishes CSS positioning — so instead of targeting one specific level, every
+           wrapper that contains the button is forced to stretch to fill its parent. This
+           cascades all the way down regardless of Streamlit's exact internal DOM nesting,
+           making the whole visible card clickable rather than a random uncovered patch. */
+        [class*="st-key-navitem-"] div:has(button) {
+            position: absolute !important;
+            inset: 0 !important;
+            margin: 0 !important;
+            z-index: 5;
+        }
+        [class*="st-key-navitem-"] button {
+            width: 100% !important; height: 100% !important;
+            opacity: 0 !important;
+            cursor: pointer;
+            padding: 0 !important; margin: 0 !important;
+            border: none !important; background: transparent !important; box-shadow: none !important;
         }
 
         .navp-logo-row {
@@ -827,19 +916,33 @@ def render_nav() -> str:
         if not collapsed:
             st.markdown('<div class="navp-section-label">Navigate</div>', unsafe_allow_html=True)
 
-        # ---- Nav links ----
+        # ---- Nav links: premium cards (icon badge + label + subtitle) ----
         for page_key, icon, label in NAV_ITEMS:
             is_active = st.session_state.active_page == page_key
-            btn_label = icon if collapsed else f"{icon}  {label}"
-            if st.button(
-                btn_label,
-                key=f"nav_btn_{page_key}",
-                type="primary" if is_active else "secondary",
-                help=label if collapsed else None,
-                use_container_width=True,
-            ):
-                st.session_state.active_page = page_key
-                st.rerun()
+            subtitle = NAV_SUBTITLES.get(page_key, "")
+            state_class = "active" if is_active else "inactive"
+            collapsed_class = "collapsed" if collapsed else ""
+            slug = page_key.replace(" ", "_").lower()
+
+            with st.container(key=f"navitem-{slug}"):
+                st.markdown(f"""
+                <div class="navp-item {state_class} {collapsed_class}">
+                    <div class="navp-icon-badge">{icon}</div>
+                    <div class="navp-text-col">
+                        <div class="navp-label">{label}</div>
+                        <div class="navp-subtitle">{subtitle}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if st.button(
+                    " ",
+                    key=f"nav_btn_{page_key}",
+                    help=label if collapsed else None,
+                    use_container_width=True,
+                ):
+                    st.session_state.active_page = page_key
+                    st.rerun()
 
         # ---- Status / meta ----
         if collapsed:
