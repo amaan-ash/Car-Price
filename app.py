@@ -966,8 +966,8 @@ def render_nav() -> str:
 
             st.markdown('<div class="navp-section-label">Links</div>', unsafe_allow_html=True)
             st.markdown("""
-            <a href="#" class="navp-link-btn" target="_blank"><span>🔗</span><span>GitHub</span></a>
-            <a href="#" class="navp-link-btn" target="_blank"><span>💼</span><span>LinkedIn</span></a>
+            <a href="https://github.com/amaan-ash" class="navp-link-btn" target="_blank"><span>🔗</span><span>GitHub</span></a>
+            <a href="https://www.linkedin.com/in/amaanalishaikh/" class="navp-link-btn" target="_blank"><span>💼</span><span>LinkedIn</span></a>
             """, unsafe_allow_html=True)
 
             st.markdown("""
