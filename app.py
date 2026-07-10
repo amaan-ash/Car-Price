@@ -1419,22 +1419,27 @@ def page_about():
             ("Evaluation", "Validated performance and consistency of price predictions."),
             ("Deployment", "Wrapped the model in this premium Streamlit dashboard for interactive use."),
         ]
-        for i, (title, desc) in enumerate(timeline):
-            is_last = i == len(timeline) - 1
-            line_html = "" if is_last else '<div class="timeline-line"></div>'
-            st.markdown(f"""
-            <div class="timeline-item">
-                <div style="position:relative;">
-                    <div class="timeline-dot"></div>
-                    {line_html}
-                </div>
-                <div>
-                    <div class="timeline-title">{title}</div>
-                    <div class="timeline-desc">{desc}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
 
+        timeline_html = ""
+
+        for i, (title, desc) in enumerate(timeline):
+          line = "" if i == len(timeline) - 1 else '<div class="timeline-line"></div>'
+
+          timeline_html += f"""
+          <div class="timeline-item">
+           <div style="position:relative;">
+            <div class="timeline-dot"></div>
+            {line}
+           </div>
+ 
+          <div>
+            <div class="timeline-title">{title}</div>
+            <div class="timeline-desc">{desc}</div>
+          </div>
+           </div>
+            """
+
+        st.markdown(timeline_html, unsafe_allow_html=True)
         st.markdown('<div class="section-heading" style="font-size:1.2rem;">🌍 SDG Alignment</div>', unsafe_allow_html=True)
         st.markdown("""
         <div class="glass-card">
