@@ -22,8 +22,15 @@ the original backend contract:
     features (in order) = [km_driven, fuel, seller_type,
                             transmission, owner, brand, car_age]
 
-Dependencies added for this UI: streamlit-option-menu
-    pip install streamlit-option-menu
+Navigation
+----------
+v2.1.0 replaces the native st.sidebar with a fully custom, fixed-position
+navigation panel rendered in the main DOM tree (st.container(key=...)).
+This removes Streamlit's automatic sidebar collapse/hide behavior — the
+panel only opens/closes when the user presses the toggle button, and its
+state is tracked in st.session_state so it survives every rerun.
+
+No extra third-party packages are required for this UI.
 """
 
 import os
@@ -34,7 +41,6 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from streamlit_option_menu import option_menu
 
 
 # ============================================================================
@@ -44,10 +50,19 @@ st.set_page_config(
     page_title="AutoWorth AI | Intelligent Car Valuation",
     page_icon="🚗",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
-APP_VERSION = "v2.0.0"
+APP_VERSION = "v2.1.0"
+
+# Nav items: (page key, icon, display label)
+NAV_ITEMS = [
+    ("Home", "🏠", "Home"),
+    ("Predict Price", "🔮", "Predict Price"),
+    ("Analytics", "📊", "Analytics"),
+    ("About", "ℹ️", "About"),
+]
+NAV_EXPANDED_WIDTH = 272
+NAV_COLLAPSED_WIDTH = 84
 
 # ============================================================================
 # CONSTANTS & PATHS  (unchanged — backend contract preserved)
@@ -531,6 +546,116 @@ def load_css():
             margin-top: 3rem;
         }
         .footer-box b { color: var(--text-2); }
+
+        /* ---------------------------------------------------------------
+           CUSTOM FIXED NAVIGATION PANEL (replaces st.sidebar entirely)
+        --------------------------------------------------------------- */
+        [class*="st-key-app-nav-panel"] {
+            position: fixed !important;
+            top: 0; left: 0; height: 100vh; z-index: 999;
+            background: linear-gradient(180deg, rgba(14,18,32,0.88) 0%, rgba(7,9,18,0.94) 100%);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.35);
+            padding: 1.3rem 0.9rem 1rem 0.9rem;
+            overflow-y: auto; overflow-x: hidden;
+            transition: width 0.28s cubic-bezier(.2,.8,.2,1);
+        }
+        [class*="st-key-app-nav-panel"]::-webkit-scrollbar { width: 4px; }
+        [class*="st-key-app-nav-panel"]::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+        /* Nav buttons: override the global brand-gradient button style
+           so the panel reads as a nav list, not a wall of CTA buttons */
+        [class*="st-key-app-nav-panel"] .stButton > button {
+            width: 100%;
+            text-align: left;
+            justify-content: flex-start;
+            font-size: 0.92rem;
+            font-weight: 600;
+            padding: 0.65rem 0.85rem;
+            border-radius: 12px;
+            margin: 3px 0;
+            box-shadow: none;
+            transition: all 0.2s ease;
+        }
+        [class*="st-key-app-nav-panel"] .stButton > button[kind="secondary"] {
+            background: transparent;
+            color: var(--text-2);
+            border: 1px solid transparent;
+        }
+        [class*="st-key-app-nav-panel"] .stButton > button[kind="secondary"]:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-1);
+            border-color: var(--border);
+            transform: none;
+        }
+        [class*="st-key-app-nav-panel"] .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: #fff;
+            border: none;
+            box-shadow: 0 8px 20px rgba(124,107,242,0.35);
+        }
+        [class*="st-key-app-nav-panel"] .stButton > button[kind="primary"]:hover {
+            transform: translateY(-1px);
+        }
+        [class*="st-key-app-nav-panel"] div[data-testid="stHorizontalBlock"] .stButton > button {
+            padding: 0.5rem 0.7rem;
+        }
+
+        .navp-logo-row {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.2rem 0.1rem 1rem 0.1rem;
+        }
+        .navp-logo-badge {
+            min-width: 40px; height: 40px; border-radius: 12px;
+            background: var(--grad-brand);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(124,107,242,0.4);
+            animation: floatGlow 4s ease-in-out infinite;
+        }
+        .navp-brand-name {
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.08rem;
+            background: linear-gradient(135deg, #cbd5ff, #f5b8e6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            line-height: 1.1; white-space: nowrap;
+        }
+        .navp-brand-sub {
+            font-size: 0.68rem; color: var(--text-3); letter-spacing: 0.04em;
+            text-transform: uppercase; font-weight: 600; white-space: nowrap;
+        }
+        .navp-section-label {
+            font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--text-3); font-weight: 700; margin: 0.9rem 0.3rem 0.35rem 0.3rem;
+        }
+        .navp-info-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 0.7rem 0.85rem; margin-bottom: 0.5rem;
+        }
+        .navp-info-label {
+            font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-3); font-weight: 700; margin-bottom: 0.1rem;
+        }
+        .navp-info-value { font-size: 0.82rem; color: var(--text-1); font-weight: 600; }
+        .navp-link-btn {
+            display: flex; align-items: center; gap: 0.55rem;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 10px; padding: 0.55rem 0.8rem; margin-bottom: 0.45rem;
+            font-size: 0.8rem; font-weight: 600; color: var(--text-1);
+            text-decoration: none; transition: all 0.2s ease;
+        }
+        .navp-link-btn:hover { background: rgba(255,255,255,0.09); border-color: var(--border-hover); }
+        .navp-footer {
+            font-size: 0.68rem; color: var(--text-3); text-align: center;
+            margin-top: 0.8rem; line-height: 1.5;
+        }
+        .navp-icon-only { text-align: center; font-size: 1.3rem; margin: 0.5rem 0; }
+
+        /* Responsive fallback: no JS viewport hook in Streamlit, so collapse
+           to icon-only rail automatically on narrow / tablet viewports */
+        @media (max-width: 900px) {
+            [class*="st-key-app-nav-panel"] { width: 84px !important; }
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -646,87 +771,110 @@ def format_inr(amount):
 
 
 # ============================================================================
-# SIDEBAR — PREMIUM NAVIGATION
+# CUSTOM FIXED NAVIGATION PANEL — replaces st.sidebar entirely
+#
+# Why not st.sidebar: Streamlit's native sidebar auto-collapses on narrow
+# viewports and can be dragged/hidden by the user via its own toggle, which
+# is exactly the "disappears unexpectedly" behavior we're removing. Instead
+# this panel lives in the MAIN document tree (st.container(key=...)) and is
+# pinned with `position: fixed` in CSS, so its open/closed state is fully
+# owned by st.session_state and changes only when the toggle button below
+# is pressed — never automatically.
 # ============================================================================
-def render_sidebar():
-    with st.sidebar:
-        st.markdown("""
-        <div class="brand-logo-wrap">
-            <div class="brand-icon-badge">🚗</div>
-            <div>
-                <div class="brand-name">AutoWorth AI</div>
-                <div class="brand-sub">Car Valuation Engine</div>
+def render_nav() -> str:
+    """Render the fixed nav panel and return the currently active page."""
+    if "nav_collapsed" not in st.session_state:
+        st.session_state.nav_collapsed = False
+    if "active_page" not in st.session_state:
+        st.session_state.active_page = "Home"
+    if "nav_override" in st.session_state:
+        st.session_state.active_page = st.session_state.pop("nav_override")
+
+    collapsed = st.session_state.nav_collapsed
+    panel_width = NAV_COLLAPSED_WIDTH if collapsed else NAV_EXPANDED_WIDTH
+
+    # Push main content clear of the fixed panel + inject the live width
+    # (the CSS transition on both rules animates the resize smoothly).
+    st.markdown(f"""
+    <style>
+        [class*="st-key-app-nav-panel"] {{ width: {panel_width}px !important; }}
+        .block-container {{ margin-left: {panel_width + 28}px !important; transition: margin-left 0.28s cubic-bezier(.2,.8,.2,1); }}
+        @media (max-width: 900px) {{ .block-container {{ margin-left: {NAV_COLLAPSED_WIDTH + 28}px !important; }} }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    with st.container(key="app-nav-panel"):
+        # ---- Logo + collapse toggle ----
+        if collapsed:
+            st.markdown('<div class="navp-icon-only">🚗</div>', unsafe_allow_html=True)
+            if st.button("»", key="nav_toggle", help="Expand navigation"):
+                st.session_state.nav_collapsed = False
+                st.rerun()
+        else:
+            st.markdown("""
+            <div class="navp-logo-row">
+                <div class="navp-logo-badge">🚗</div>
+                <div>
+                    <div class="navp-brand-name">AutoWorth AI</div>
+                    <div class="navp-brand-sub">Car Valuation Engine</div>
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+            if st.button("«  Collapse", key="nav_toggle", help="Collapse navigation"):
+                st.session_state.nav_collapsed = True
+                st.rerun()
 
-        nav_options = ["Home", "Predict Price", "Analytics", "About"]
-        manual_index = None
-        if "nav_override" in st.session_state:
-            manual_index = nav_options.index(st.session_state.pop("nav_override"))
+        if not collapsed:
+            st.markdown('<div class="navp-section-label">Navigate</div>', unsafe_allow_html=True)
 
-        page = option_menu(
-            menu_title=None,
-            options=nav_options,
-            icons=["house-fill", "magic", "bar-chart-line-fill", "person-badge-fill"],
-            default_index=0,
-            manual_select=manual_index,
-            key="main_nav_menu",
-            styles={
-                "container": {"padding": "0", "background-color": "transparent"},
-                "icon": {"color": "#a7a3f5", "font-size": "16px"},
-                "nav-link": {
-                    "font-size": "0.92rem",
-                    "font-weight": "600",
-                    "text-align": "left",
-                    "margin": "4px 0",
-                    "padding": "0.65rem 0.9rem",
-                    "border-radius": "12px",
-                    "color": "#c6c9db",
-                    "--hover-color": "rgba(255,255,255,0.06)",
-                },
-                "nav-link-selected": {
-                    "background": "linear-gradient(135deg, #6366f1, #a855f7)",
-                    "color": "#ffffff",
-                    "font-weight": "700",
-                    "box-shadow": "0 8px 20px rgba(124,107,242,0.35)",
-                },
-            },
-        )
+        # ---- Nav links ----
+        for page_key, icon, label in NAV_ITEMS:
+            is_active = st.session_state.active_page == page_key
+            btn_label = icon if collapsed else f"{icon}  {label}"
+            if st.button(
+                btn_label,
+                key=f"nav_btn_{page_key}",
+                type="primary" if is_active else "secondary",
+                help=label if collapsed else None,
+                use_container_width=True,
+            ):
+                st.session_state.active_page = page_key
+                st.rerun()
 
-        st.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
+        # ---- Status / meta ----
+        if collapsed:
+            st.markdown('<div class="navp-icon-only" title="Model Online">🟢</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="navp-section-label">System</div>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="navp-info-card">
+                <div class="navp-info-label">Model Status</div>
+                <div class="navp-info-value"><span class="live-dot"></span>Online &amp; Ready</div>
+            </div>
+            <div class="navp-info-card">
+                <div class="navp-info-label">Algorithm</div>
+                <div class="navp-info-value">Random Forest Regressor</div>
+            </div>
+            <div class="navp-info-card">
+                <div class="navp-info-label">App Version</div>
+                <div class="navp-info-value">{APP_VERSION}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("""
-        <div class="sidebar-info-card">
-            <div class="sidebar-info-label">Model Status</div>
-            <div class="sidebar-info-value"><span class="live-dot"></span>Online &amp; Ready</div>
-        </div>
-        <div class="sidebar-info-card">
-            <div class="sidebar-info-label">Algorithm</div>
-            <div class="sidebar-info-value">Random Forest Regressor</div>
-        </div>
-        <div class="sidebar-info-card">
-            <div class="sidebar-info-label">App Version</div>
-            <div class="sidebar-info-value">""" + APP_VERSION + """</div>
-        </div>
-        """, unsafe_allow_html=True)
+            st.markdown('<div class="navp-section-label">Links</div>', unsafe_allow_html=True)
+            st.markdown("""
+            <a href="#" class="navp-link-btn" target="_blank"><span>🔗</span><span>GitHub</span></a>
+            <a href="#" class="navp-link-btn" target="_blank"><span>💼</span><span>LinkedIn</span></a>
+            """, unsafe_allow_html=True)
 
-        st.markdown("""
-        <a href="#" class="github-btn" target="_blank">
-            <span>🔗</span><span>View on GitHub</span>
-        </a>
-        """, unsafe_allow_html=True)
+            st.markdown("""
+            <div class="navp-footer">
+                Developed by <b style="color:#e8ebf5;">Amaan Ali Shaikh</b><br>
+                PRN&nbsp;125BTCM2005 &nbsp;·&nbsp; © 2026
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="sidebar-footer">
-            Developed by <b style="color:#e8ebf5;">Amaan Ali Shaikh</b><br>
-            PRN&nbsp;125BTCM2005<br>
-            © 2026 AutoWorth AI
-        </div>
-        """, unsafe_allow_html=True)
-
-    return page
+    return st.session_state.active_page
 
 
 # ============================================================================
@@ -1266,7 +1414,7 @@ def main():
     model, encoders, metadata, error = load_artifacts()
     df, _ = load_dataset()
 
-    page = render_sidebar()
+    page = render_nav()
 
     if error:
         st.error(f"⚠️ Failed to load model artifacts: {error}\n\nPlease ensure `car_price_model.pkl`, "
